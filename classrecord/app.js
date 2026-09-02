@@ -14,55 +14,110 @@
 
 const STORAGE_KEY = "lumina-classrecord-v1";
 
-let state = load();
+let state; // initialized at the bottom of this file, after all declarations
 
 function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const st = JSON.parse(raw);
+      migrate(st);
+      return st;
+    }
   } catch (e) { /* corrupted -> start fresh */ }
   return seedState();
 }
 
-/* Sample data: Grade 6 – Balintawak (Class E) */
-function seedState() {
-  const males = [
-    "BANDE, ANGELO L.", "BAYANA, FRENZ ROFFERT E.", "BESINAN, MARK ANDREW D.",
-    "CAMPOMANES, JHUNMAR C.", "CASADO, ENRIQUE SEAN D.", "DARVIN, ELIJU JOSEPH C.",
-    "DIAMANTE, HARLEIGH P.", "DORDINES, MARCK LOURENCE", "ENTERO, FRANZ ELLYSES T.",
-    "JIMLANI, KADAFI J.", "MATALANDANG, JOHN REY S.", "ORLANES, EIZEL JAY M.",
-    "PELAEZ, CARL NATHANIEL T.", "PEPITO, RICHARD M.", "REBAJA, ZYREN KARL O.",
-    "RENTUAYA, AJ G.", "SAHISAN, KHAIRAN CARLOS", "SAMPAN, DAVE",
-    "TABIGUE, JAY CHRISTOFF C.", "TABUNARES, LEONARD M.", "TAMPOS, FRANCIS EDRIAN S."
-  ];
-  const females = [
-    "ALIÑAR, REESE CZELEA MAXENE D.", "ARCAYNA, REANELLE B.", "BAON, JANELLE FAITH L.",
-    "BORDIOS, DANICA G.", "CALUNZAG, AINELYN B.", "DANDOY, NIKKA L.",
-    "DELA TORRE, ALLISON RUTH C.", "DOÑOS, SHAYNE B.", "ELLERA, JULIA L.",
-    "FERNANDEZ, EDEN MAE O.", "LAGUNGAN, MAYRA JANE S.", "LANGUAY, SHAYNA MAE S.",
-    "LESMIS, ASHLY CLOUDY C.", "MAMITES, RIENA VEILLE E.", "MONTEJO, IVAN MAE P.",
-    "PALEN, KEINESSA MAE B.", "PINUELA, LYZA MAE A.", "RADIAMODA, ALMAIRAH",
-    "SAJETARIOS, FRANCINE", "TABUNARES, ALLEAH KEN M.", "TEQUIN, GLENNIEL SHANE G.",
-    "TERANTE, NORVIE O."
-  ];
-  const sec = {
-    id: uid(),
+/* ---------- Sample class lists ---------- */
+const SEED_VERSION = 2;
+
+const SAMPLE_SECTIONS = [
+  {
     name: "Grade 6 – Balintawak (Class E)",
+    males: [
+      "BANDE, ANGELO L.", "BAYANA, FRENZ ROFFERT E.", "BESINAN, MARK ANDREW D.",
+      "CAMPOMANES, JHUNMAR C.", "CASADO, ENRIQUE SEAN D.", "DARVIN, ELIJU JOSEPH C.",
+      "DIAMANTE, HARLEIGH P.", "DORDINES, MARCK LOURENCE", "ENTERO, FRANZ ELLYSES T.",
+      "JIMLANI, KADAFI J.", "MATALANDANG, JOHN REY S.", "ORLANES, EIZEL JAY M.",
+      "PELAEZ, CARL NATHANIEL T.", "PEPITO, RICHARD M.", "REBAJA, ZYREN KARL O.",
+      "RENTUAYA, AJ G.", "SAHISAN, KHAIRAN CARLOS", "SAMPAN, DAVE",
+      "TABIGUE, JAY CHRISTOFF C.", "TABUNARES, LEONARD M.", "TAMPOS, FRANCIS EDRIAN S."
+    ],
+    females: [
+      "ALIÑAR, REESE CZELEA MAXENE D.", "ARCAYNA, REANELLE B.", "BAON, JANELLE FAITH L.",
+      "BORDIOS, DANICA G.", "CALUNZAG, AINELYN B.", "DANDOY, NIKKA L.",
+      "DELA TORRE, ALLISON RUTH C.", "DOÑOS, SHAYNE B.", "ELLERA, JULIA L.",
+      "FERNANDEZ, EDEN MAE O.", "LAGUNGAN, MAYRA JANE S.", "LANGUAY, SHAYNA MAE S.",
+      "LESMIS, ASHLY CLOUDY C.", "MAMITES, RIENA VEILLE E.", "MONTEJO, IVAN MAE P.",
+      "PALEN, KEINESSA MAE B.", "PINUELA, LYZA MAE A.", "RADIAMODA, ALMAIRAH",
+      "SAJETARIOS, FRANCINE", "TABUNARES, ALLEAH KEN M.", "TEQUIN, GLENNIEL SHANE G.",
+      "TERANTE, NORVIE O."
+    ]
+  },
+  {
+    name: "Grade 6 – Bataan (Class E) – English",
+    males: [
+      "ANUTA, JELORD C.", "ARAKAMA, KOBE D.", "BADAYOS, JHON KIRBY L.",
+      "BADAYOS, KLENT L.", "CANAREZ, PRINCE RAMGEL R.", "DABAL, JHEEM KHYLE B.",
+      "DEPILLO, RADGE M.", "DELA ROSA, JACOB J.", "EBNO, JASIM K.",
+      "ELTAGONDE, JHON MARK P.", "EVARISTO, NOEL JHON G.", "GASULLA, JOHN PAOLO MARXELL",
+      "LAGUNA, KARL ACHILLES B.", "MAGLACION, FRANCE RICHARD", "MILAGROSA, JAMES GABRIEL",
+      "OANI, GERALD C.", "PANUGALING, LIAM B.", "PAUSANOS, NETHAN T.",
+      "REFERENTE, RONALD JR.", "RUIZ, RUBEN JR. B.", "SAMPAN, JUNIE JR. D.",
+      "SERENTAS, KAISER JHOMS", "SOLANI, JIMAR M.", "TEMARIO, JOHN ANTHONY",
+      "TEMARIO, JHONY LI"
+    ],
+    females: [
+      "ALAMBATIN, DELIGHT", "ASMAJIN, NURFISA W.", "AYENG, ALEXZA M.",
+      "BACASMOT, MIA L.", "BALANSAG, RAMIELA MAE C.", "BUHAT, SHIENNE B.",
+      "CAL, JENNY W.", "CORTEZ, MARIAN GAIL A.", "DIVINAGRACIA, DANIELLA G.",
+      "ENGBINO, ABEGAIL M.", "GEBONE, GABRIELLE REIGN", "MONIZ, REVY D.",
+      "PAGUNTALAN, LORRAINE D.", "PUGOSA, REYNALIN", "ROZALDO, SOPHIA E.",
+      "SAGANG, FRANZAIN B.", "SAYRE, NUR CHLOE A.", "VILLAFUERTE, MARIAN JENNELL"
+    ]
+  }
+];
+
+function buildSection(def) {
+  return {
+    id: uid(),
+    name: def.name,
     pupils: [
-      ...males.map(n => ({ id: uid(), name: n, g: "M" })),
-      ...females.map(n => ({ id: uid(), name: n, g: "F" }))
+      ...def.males.map(n => ({ id: uid(), name: n, g: "M" })),
+      ...def.females.map(n => ({ id: uid(), name: n, g: "F" }))
     ],
     assessments: [],
     scores: {}
   };
-  return { activeSectionId: sec.id, sections: [sec] };
+}
+
+function seedState() {
+  const sections = SAMPLE_SECTIONS.map(buildSection);
+  return { activeSectionId: sections[0].id, sections, seedVersion: SEED_VERSION };
+}
+
+/* Add newly-shipped sample sections to existing data (never re-adds
+   ones the teacher deleted after this version). */
+function migrate(st) {
+  if (!Array.isArray(st.sections)) st.sections = [];
+  if ((st.seedVersion || 1) < SEED_VERSION) {
+    SAMPLE_SECTIONS.forEach(def => {
+      if (!st.sections.some(s => s.name === def.name)) st.sections.push(buildSection(def));
+    });
+    st.seedVersion = SEED_VERSION;
+    if (!st.activeSectionId && st.sections.length) st.activeSectionId = st.sections[0].id;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(st));
+  }
 }
 
 function save() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+/* Function declaration (hoisted) so seedState/load can use it safely */
+function uid() {
+  return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+}
 
 function activeSection() {
   return state.sections.find(s => s.id === state.activeSectionId) || null;
@@ -693,4 +748,5 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js").catch(() => { /* offline mode unavailable */ });
 }
 
+state = load();
 render();
