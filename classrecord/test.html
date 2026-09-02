@@ -3,42 +3,105 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ClassRecord — Connection Test</title>
+<title>ClassRecord — Deep Test</title>
 </head>
-<body style="font-family:sans-serif;background:#f4f6fb;color:#1e2433;padding:24px;line-height:1.7">
-  <h2 style="margin-top:0">🔍 ClassRecord Test Page</h2>
+<body style="font-family:sans-serif;background:#f4f6fb;color:#1e2433;padding:24px;line-height:1.7;max-width:720px;margin:auto">
+  <h2 style="margin-top:0">🔍 ClassRecord Deep Test (v9)</h2>
   <p style="background:#e7f6ee;border:2px solid #23a35f;border-radius:10px;padding:12px">
-    ✅ <b>You can read this — the website connection works,<br />and you received build v8 (the newest files).</b>
+    ✅ <b>Connection works — you received build v9 (the newest files).</b>
   </p>
-  <div id="out" style="background:#fff;border:1px solid #dfe3ee;border-radius:10px;padding:12px;font-size:14px">
-    ❌ JavaScript did NOT run. Your browser is blocking or cannot run JavaScript.
-    Check: browser settings → Site settings → JavaScript → Allowed.
+
+  <div id="out" style="background:#fff;border:1px solid #dfe3ee;border-radius:10px;padding:14px;font-size:14px;word-break:break-word">
+    ❌ JavaScript did NOT run in this browser.
   </div>
+
   <p>
-    <a id="golink" href="index.html" style="display:inline-block;background:#4f63d2;color:#fff;text-decoration:none;border-radius:10px;padding:14px 20px;font-weight:bold">
+    <button id="repair" style="background:#d64550;color:#fff;border:none;border-radius:10px;padding:14px 20px;font-size:15px;font-weight:bold;width:100%">
+      🔧 REPAIR: wipe every cache &amp; service worker on this site
+    </button>
+  </p>
+  <p>
+    <a id="golink" href="index.html" style="display:block;text-align:center;background:#4f63d2;color:#fff;text-decoration:none;border-radius:10px;padding:14px 20px;font-weight:bold">
       🚀 Open ClassRecord (fresh copy)
     </a>
   </p>
-  <p style="font-size:12px;color:#7b849e">Send a screenshot of this page to the developer if the app still fails.</p>
+  <p style="font-size:12px;color:#7b849e">Send a screenshot of this WHOLE page to the developer.</p>
 
   <script>
     (function () {
+      var out = document.getElementById("out");
       var lines = [];
-      lines.push("✅ JavaScript runs: YES");
-      lines.push("🕒 Time now: " + new Date().toString());
-      try {
-        localStorage.setItem("__t", "1");
-        localStorage.removeItem("__t");
-        lines.push("✅ Storage (for saving scores): WORKING");
-      } catch (e) {
-        lines.push("❌ Storage: BLOCKED — scores cannot save. Are you in Private/Incognito mode permanently, or is 'Block cookies' turned on?");
+      function flush() { out.innerHTML = lines.join("<br />"); }
+      function add(s) { lines.push(s); flush(); }
+
+      add("✅ JavaScript runs: YES");
+      add("🌐 This page's real address: " + location.href);
+      add("🕒 " + new Date().toString());
+      try { localStorage.setItem("__t", "1"); localStorage.removeItem("__t"); add("✅ Storage: WORKING"); }
+      catch (e) { add("❌ Storage: BLOCKED (" + e + ")"); }
+      add("🖥 Browser: " + navigator.userAgent);
+
+      // Service workers currently controlling this site
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          add("📲 Service workers registered here: " + regs.length +
+            (regs.length ? " — scope(s): " + regs.map(function (r) { return r.scope; }).join(", ") : " (none)"));
+        }, function (e) { add("📲 Service worker check failed: " + e); });
+      } else {
+        add("📲 Service workers: not supported");
       }
-      lines.push("📱 Browser: " + navigator.userAgent);
-      var sw = ("serviceWorker" in navigator) ? "supported" : "not supported (app still works online)";
-      lines.push("📲 Offline mode: " + sw);
-      document.getElementById("out").innerHTML = lines.join("<br />");
-      var a = document.getElementById("golink");
-      a.href = "index.html?fresh=" + new Date().getTime();
+
+      // X-ray: what does THIS browser actually receive for the app files?
+      function probe(label, url, mustContain) {
+        try {
+          var x = new XMLHttpRequest();
+          x.open("GET", url + (url.indexOf("?") === -1 ? "?" : "&") + "nc=" + new Date().getTime(), true);
+          x.onreadystatechange = function () {
+            if (x.readyState !== 4) return;
+            var body = x.responseText || "";
+            var head = body.replace(/\s+/g, " ").slice(0, 90);
+            var ok = x.status === 200 && body.indexOf(mustContain) !== -1;
+            add((ok ? "✅" : "❌") + " " + label + " → HTTP " + x.status +
+              ", " + body.length + " chars" +
+              (ok ? " — CORRECT NEW FILE"
+                  : " — WRONG/OLD! Starts with: “" + head + "…”"));
+            var respURL = x.responseURL || "";
+            if (respURL && respURL.split("?")[0].indexOf(url.split("?")[0]) === -1) {
+              add("⚠️ " + label + " was REDIRECTED to: " + respURL);
+            }
+          };
+          x.send();
+        } catch (e) { add("❌ " + label + " probe failed: " + e); }
+      }
+      probe("App page (index.html)", "index.html", "bootMsg");
+      probe("App program (app.js)", "app.js?v=9", "SEED_VERSION");
+      probe("App styles (styles.css)", "styles.css?v=9", "quick-entry");
+
+      // Repair button
+      document.getElementById("repair").onclick = function () {
+        var btn = this;
+        btn.textContent = "Repairing…";
+        var jobs = [];
+        try {
+          if (window.caches && caches.keys) {
+            jobs.push(caches.keys().then(function (ks) {
+              return Promise.all(ks.map(function (k) { return caches.delete(k); }));
+            }));
+          }
+          if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+            jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) {
+              return Promise.all(rs.map(function (r) { return r.unregister(); }));
+            }));
+          }
+        } catch (e) {}
+        var done = function () {
+          btn.textContent = "✅ Repaired! Now tap “Open ClassRecord” below";
+          btn.style.background = "#23a35f";
+        };
+        Promise.all(jobs).then(done, done);
+      };
+
+      document.getElementById("golink").href = "index.html?fresh=" + new Date().getTime();
     })();
   </script>
 </body>
