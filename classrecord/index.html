@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Lumina ClassRecord — Teacher's Score Sheet</title>
+<meta name="theme-color" content="#232a41" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<link rel="icon" type="image/png" href="icon-192.png" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="stylesheet" href="styles.css?v=11" />
+<script>
+/* Debug logger: records every boot step; panel opens with ?debug=1 or the 🐞 button */
+(function () {
+  window.__DBG = { logs: [] };
+  window.__dbgLog = function (m) {
+    window.__DBG.logs.push(new Date().toTimeString().slice(0, 8) + "  " + m);
+    if (window.__dbgPaint) window.__dbgPaint();
+  };
+  __dbgLog("1/5 page HTML received (build v11)");
+  window.addEventListener("error", function (ev) {
+    __dbgLog("❌ ERROR: " + (ev.message || "unknown") +
+      (ev.filename ? " @ " + ev.filename.split("/").pop() + " line " + ev.lineno : ""));
+  });
+})();
+</script>
+<script>
+/* Kill-switch: opening the app as index.html?fresh wipes all caches & service workers */
+(function () {
+  if (location.search.indexOf("fresh") !== -1) {
+    try {
+      if (window.caches && caches.keys) caches.keys().then(function (ks) { ks.forEach(function (k) { caches.delete(k); }); });
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) navigator.serviceWorker.getRegistrations().then(function (rs) { rs.forEach(function (r) { r.unregister(); }); });
+    } catch (e) {}
+  }
+})();
+</script>
+<script>
+/* Error catcher: never show a silent white screen. */
+(function () {
+  function show(msg) {
+    try {
+      var d = document.getElementById("fatal-error");
+      if (!d) {
+        d = document.createElement("div");
+        d.id = "fatal-error";
+        d.style.cssText = "position:fixed;left:10px;right:10px;top:10px;z-index:99999;background:#fff3f3;border:2px solid #d64550;border-radius:12px;padding:14px;font-family:sans-serif;color:#8c1d26;font-size:14px;box-shadow:0 8px 30px rgba(0,0,0,.25)";
+        d.innerHTML = '<b>Something went wrong loading the app 😔</b><div id="fatal-error-msg" style="margin:8px 0;font-size:12px;word-break:break-word"></div>' +
+          '<button id="fatal-fix" style="background:#d64550;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:14px;font-weight:bold">Clear cache &amp; reload</button>';
+        (document.body || document.documentElement).appendChild(d);
+        document.getElementById("fatal-fix").onclick = function () {
+          var done = function () { location.reload(); };
+          try {
+            var p = [];
+            if (window.caches && caches.keys) p.push(caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); }));
+            if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) p.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); }));
+            Promise.all(p).then(done, done);
+          } catch (e) { done(); }
+        };
+      }
+      document.getElementById("fatal-error-msg").textContent = msg;
+    } catch (e) { /* last resort: nothing */ }
+  }
+  window.addEventListener("error", function (ev) {
+    show((ev.message || "Unknown error") + (ev.filename ? " — " + ev.filename.split("/").pop() + ":" + ev.lineno : ""));
+  });
+})();
+</script>
+</head>
+<body>
+  <!-- Boot splash: visible immediately; app.js removes it when the app renders.
+       If the user sees this text frozen, JavaScript failed to run. -->
+  <div id="bootMsg" style="position:fixed;top:0;left:0;right:0;bottom:0;background:#f4f6fb;z-index:99998;font-family:sans-serif;color:#39415a;font-size:16px;text-align:center;padding:120px 24px 0">
+    <div style="font-size:40px">📘</div>
+    <b>Loading Lumina ClassRecord…</b>
+    <div style="font-size:12px;color:#8a93ab;margin-top:10px">build v11</div>
+    <div style="font-size:13px;color:#8a93ab;margin-top:18px">
+      If this message does not disappear in a few seconds,<br />
+      tap here to see what is wrong:
+      <a href="?debug=1" style="color:#4f63d2;font-weight:bold">🐞 Show debug</a>
+    </div>
+  </div>
+
+  <!-- Mobile top bar -->
+  <header class="topbar">
+    <button class="topbar-burger" id="btnDrawer" aria-label="Menu">☰</button>
+    <div class="topbar-title" id="topbarTitle">Lumina ClassRecord</div>
+    <div class="topbar-icon">📘</div>
+  </header>
+  <div class="drawer-overlay" id="drawerOverlay" hidden></div>
+
+  <div id="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">📘</div>
+        <div>
+          <h1>Lumina ClassRecord</h1>
+          <p>Teacher's score sheet</p>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">
+          <span>Sections</span>
+          <button class="btn-icon" id="btnAddSection" title="Add section">＋</button>
+        </div>
+        <ul id="sectionList" class="section-list"></ul>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="btn btn-ghost btn-sm" id="btnExportAll">⬇ Export all sections (.xlsx)</button>
+        <button class="btn btn-ghost btn-sm" id="btnBackup">💾 Backup data (.json)</button>
+        <button class="btn btn-ghost btn-sm" id="btnRestore">📂 Restore backup</button>
+        <button class="btn btn-ghost btn-sm" onclick="window.__dbgOpen && window.__dbgOpen()">🐞 Debug</button>
+        <input type="file" id="fileRestore" accept=".json" hidden />
+        <p class="hint">Data is saved automatically in this browser.</p>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main" id="main"></main>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modalOverlay" hidden>
+    <div class="modal" id="modal"></div>
+  </div>
+
+  <!-- Full-screen quick score entry (phone-friendly) -->
+  <div id="quickEntry" class="quick-entry" hidden></div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script>
+  /* Debug panel (independent of the app — works even if app.js fails) */
+  (function () {
+    function paint() {
+      var el = document.getElementById("dbgLogs");
+      if (el) el.innerHTML = window.__DBG.logs.join("<br />");
+    }
+    window.__dbgPaint = paint;
+    function wipe() {
+      var done = function () { location.href = location.pathname + "?debug=1"; };
+      try {
+        var p = [];
+        if (window.caches && caches.keys) p.push(caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); }));
+        if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) p.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); }));
+        Promise.all(p).then(done, done);
+      } catch (e) { done(); }
+    }
+    window.__dbgOpen = function () {
+      if (document.getElementById("dbgPanel")) { paint(); return; }
+      var d = document.createElement("div");
+      d.id = "dbgPanel";
+      d.style.cssText = "position:fixed;bottom:0;left:0;right:0;max-height:60%;overflow:auto;background:#101a2e;color:#9fe8b2;font-family:monospace;font-size:12px;line-height:1.7;padding:12px;z-index:100000;border-top:3px solid #4f63d2";
+      d.innerHTML = '<div style="color:#fff;font-weight:bold;margin-bottom:6px">🐞 DEBUG — Lumina ClassRecord (build v11) ' +
+        '<button id="dbgClose" style="float:right;margin-left:6px">✕ close</button>' +
+        '<button id="dbgWipe" style="float:right;margin-left:6px">wipe cache &amp; reload</button>' +
+        '<button id="dbgCopy" style="float:right">copy report</button></div>' +
+        '<div id="dbgLogs"></div>';
+      document.body.appendChild(d);
+      document.getElementById("dbgClose").onclick = function () { d.parentNode.removeChild(d); };
+      document.getElementById("dbgWipe").onclick = wipe;
+      document.getElementById("dbgCopy").onclick = function () {
+        var t = window.__DBG.logs.join("\n");
+        try { navigator.clipboard.writeText(t); alert("Report copied — paste it in the chat."); }
+        catch (e) { prompt("Copy this report:", t); }
+      };
+      __dbgLog("— environment —");
+      __dbgLog("URL: " + location.href);
+      __dbgLog("Browser: " + navigator.userAgent);
+      try {
+        var raw = localStorage.getItem("lumina-classrecord-v1");
+        __dbgLog("Saved data: " + (raw ? JSON.parse(raw).sections.length + " sections (" + raw.length + " chars)" : "none yet (fresh device)"));
+      } catch (e) { __dbgLog("❌ Storage problem: " + e); }
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+        navigator.serviceWorker.getRegistrations().then(function (rs) {
+          __dbgLog("Old offline component still present: " + (rs.length ? "YES (" + rs.length + ") — press “wipe cache & reload”" : "no ✔"));
+        });
+      }
+      if (window.caches && caches.keys) {
+        caches.keys().then(function (ks) { __dbgLog("Stored caches: " + (ks.length ? ks.join(", ") + " — press “wipe cache & reload”" : "none ✔")); });
+      }
+      paint();
+    };
+    if (location.search.indexOf("debug") !== -1) {
+      if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", window.__dbgOpen);
+      else window.__dbgOpen();
+    }
+  })();
+  </script>
+  <script defer src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+  <script defer src="app.js?v=11"></script>
+</body>
+</html>
