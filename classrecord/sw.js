@@ -1,10 +1,10 @@
 /* Lumina ClassRecord — service worker (offline support) */
-const CACHE = "classrecord-v7";
+const CACHE = "classrecord-v8";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=7",
-  "./app.js?v=7",
+  "./styles.css?v=8",
+  "./app.js?v=8",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png"
@@ -24,10 +24,20 @@ self.addEventListener("activate", (e) => {
   );
 });
 
-/* Cache-first, then network; opportunistically cache successful GETs
-   (including the SheetJS CDN script) so exports work offline too. */
+/* Pages (navigations): network-first so updates always arrive when online;
+   fall back to cache when offline. Static assets: cache-first. */
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
+  if (e.request.mode === "navigate") {
+    e.respondWith(
+      fetch(e.request).then((resp) => {
+        const clone = resp.clone();
+        caches.open(CACHE).then((c) => c.put(e.request, clone));
+        return resp;
+      }).catch(() => caches.match(e.request).then((r) => r || caches.match("./")))
+    );
+    return;
+  }
   e.respondWith(
     caches.match(e.request).then((cached) => {
       if (cached) return cached;

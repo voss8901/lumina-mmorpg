@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ClassRecord — Connection Test</title>
+</head>
+<body style="font-family:sans-serif;background:#f4f6fb;color:#1e2433;padding:24px;line-height:1.7">
+  <h2 style="margin-top:0">🔍 ClassRecord Test Page</h2>
+  <p style="background:#e7f6ee;border:2px solid #23a35f;border-radius:10px;padding:12px">
+    ✅ <b>You can read this — the website connection works,<br />and you received build v8 (the newest files).</b>
+  </p>
+  <div id="out" style="background:#fff;border:1px solid #dfe3ee;border-radius:10px;padding:12px;font-size:14px">
+    ❌ JavaScript did NOT run. Your browser is blocking or cannot run JavaScript.
+    Check: browser settings → Site settings → JavaScript → Allowed.
+  </div>
+  <p>
+    <a id="golink" href="index.html" style="display:inline-block;background:#4f63d2;color:#fff;text-decoration:none;border-radius:10px;padding:14px 20px;font-weight:bold">
+      🚀 Open ClassRecord (fresh copy)
+    </a>
+  </p>
+  <p style="font-size:12px;color:#7b849e">Send a screenshot of this page to the developer if the app still fails.</p>
+
+  <script>
+    (function () {
+      var lines = [];
+      lines.push("✅ JavaScript runs: YES");
+      lines.push("🕒 Time now: " + new Date().toString());
+      try {
+        localStorage.setItem("__t", "1");
+        localStorage.removeItem("__t");
+        lines.push("✅ Storage (for saving scores): WORKING");
+      } catch (e) {
+        lines.push("❌ Storage: BLOCKED — scores cannot save. Are you in Private/Incognito mode permanently, or is 'Block cookies' turned on?");
+      }
+      lines.push("📱 Browser: " + navigator.userAgent);
+      var sw = ("serviceWorker" in navigator) ? "supported" : "not supported (app still works online)";
+      lines.push("📲 Offline mode: " + sw);
+      document.getElementById("out").innerHTML = lines.join("<br />");
+      var a = document.getElementById("golink");
+      a.href = "index.html?fresh=" + new Date().getTime();
+    })();
+  </script>
+</body>
+</html>

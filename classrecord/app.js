@@ -824,3 +824,9 @@ if ("serviceWorker" in navigator) {
 
 state = load();
 render();
+
+/* Remove the boot splash — the app is alive */
+(function () {
+  var boot = document.getElementById("bootMsg");
+  if (boot && boot.parentNode) boot.parentNode.removeChild(boot);
+})();
