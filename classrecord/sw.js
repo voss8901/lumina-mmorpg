@@ -1,10 +1,10 @@
 /* Lumina ClassRecord — service worker (offline support) */
-const CACHE = "classrecord-v9";
+const CACHE = "classrecord-v10";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=9",
-  "./app.js?v=9",
+  "./styles.css?v=10",
+  "./app.js?v=10",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png"
@@ -24,27 +24,40 @@ self.addEventListener("activate", (e) => {
   );
 });
 
+/* Fetch that can never return an empty 304 body: for same-origin files we
+   re-request by URL with revalidation, so the response is always a full 200. */
+function freshFetch(req) {
+  if (req.url.indexOf(self.location.origin) === 0) {
+    return fetch(req.url, { cache: "no-cache", credentials: "same-origin" });
+  }
+  return fetch(req);
+}
+
 /* Pages (navigations): network-first so updates always arrive when online;
    fall back to cache when offline. Static assets: cache-first. */
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
   if (e.request.mode === "navigate") {
     e.respondWith(
-      fetch(e.request).then((resp) => {
-        const clone = resp.clone();
-        caches.open(CACHE).then((c) => c.put(e.request, clone));
-        return resp;
-      }).catch(() => caches.match(e.request).then((r) => r || caches.match("./")))
+      freshFetch(e.request).then((resp) => {
+        if (resp && resp.ok) {
+          const clone = resp.clone();
+          caches.open(CACHE).then((c) => c.put("./", clone));
+          return resp;
+        }
+        return caches.match("./").then((r) => r || resp);
+      }).catch(() => caches.match("./"))
     );
     return;
   }
   e.respondWith(
     caches.match(e.request).then((cached) => {
       if (cached) return cached;
-      return fetch(e.request).then((resp) => {
+      return freshFetch(e.request).then((resp) => {
         if (resp && (resp.ok || resp.type === "opaque")) {
           const clone = resp.clone();
           caches.open(CACHE).then((c) => c.put(e.request, clone));
+          return resp;
         }
         return resp;
       }).catch(() => cached);
