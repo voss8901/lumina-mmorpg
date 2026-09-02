@@ -14,6 +14,8 @@
 
 const STORAGE_KEY = "lumina-classrecord-v1";
 
+if (window.__dbgLog) __dbgLog("2/5 program file loaded & parsed OK");
+
 let state; // initialized at the bottom of this file, after all declarations
 
 function load() {
@@ -817,13 +819,22 @@ document.getElementById("fileRestore").addEventListener("change", e => {
 document.getElementById("btnDrawer").onclick = openDrawer;
 document.getElementById("drawerOverlay").onclick = closeDrawer;
 
-/* Offline support / installable app */
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js").catch(() => { /* offline mode unavailable */ });
+/* The offline component caused blank screens — it is gone for good.
+   Actively remove it from any device that still has it. */
+if ("serviceWorker" in navigator && navigator.serviceWorker.getRegistrations) {
+  navigator.serviceWorker.getRegistrations().then(function (rs) {
+    rs.forEach(function (r) { r.unregister(); });
+  }).catch(function () {});
+}
+if (window.caches && caches.keys) {
+  caches.keys().then(function (ks) { ks.forEach(function (k) { caches.delete(k); }); }).catch(function () {});
 }
 
+if (window.__dbgLog) __dbgLog("3/5 program started");
 state = load();
+if (window.__dbgLog) __dbgLog("4/5 data loaded (" + state.sections.length + " sections)");
 render();
+if (window.__dbgLog) __dbgLog("5/5 screen rendered — READY ✔");
 
 /* Remove the boot splash — the app is alive */
 (function () {

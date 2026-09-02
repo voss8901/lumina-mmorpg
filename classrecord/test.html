@@ -6,9 +6,9 @@
 <title>ClassRecord — Deep Test</title>
 </head>
 <body style="font-family:sans-serif;background:#f4f6fb;color:#1e2433;padding:24px;line-height:1.7;max-width:720px;margin:auto">
-  <h2 style="margin-top:0">🔍 ClassRecord Deep Test (v9)</h2>
+  <h2 style="margin-top:0">🔍 ClassRecord Deep Test (v11)</h2>
   <p style="background:#e7f6ee;border:2px solid #23a35f;border-radius:10px;padding:12px">
-    ✅ <b>Connection works — you received build v9 (the newest files).</b>
+    ✅ <b>Connection works — you received build v11 (the newest files).</b>
   </p>
 
   <div id="out" style="background:#fff;border:1px solid #dfe3ee;border-radius:10px;padding:14px;font-size:14px;word-break:break-word">
@@ -74,8 +74,8 @@
         } catch (e) { add("❌ " + label + " probe failed: " + e); }
       }
       probe("App page (index.html)", "index.html", "bootMsg");
-      probe("App program (app.js)", "app.js?v=9", "SEED_VERSION");
-      probe("App styles (styles.css)", "styles.css?v=9", "quick-entry");
+      probe("App program (app.js)", "app.js?v=11", "SEED_VERSION");
+      probe("App styles (styles.css)", "styles.css?v=11", "quick-entry");
 
       // Repair button
       document.getElementById("repair").onclick = function () {

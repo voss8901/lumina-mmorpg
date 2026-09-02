@@ -1,66 +1,17 @@
-/* Lumina ClassRecord — service worker (offline support) */
-const CACHE = "classrecord-v10";
-const ASSETS = [
-  "./",
-  "./index.html",
-  "./styles.css?v=10",
-  "./app.js?v=10",
-  "./manifest.json",
-  "./icon-192.png",
-  "./icon-512.png"
-];
-
-self.addEventListener("install", (e) => {
-  e.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting())
-  );
+/* Lumina ClassRecord — self-destructing service worker.
+   The old offline component caused blank pages, so this version
+   removes itself and all stored caches, then reloads the app. */
+self.addEventListener("install", function () {
+  self.skipWaiting();
 });
 
-self.addEventListener("activate", (e) => {
+self.addEventListener("activate", function (e) {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim())
+      .then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); })
+      .then(function () { return self.registration.unregister(); })
+      .then(function () { return self.clients.matchAll({ type: "window" }); })
+      .then(function (cs) { cs.forEach(function (c) { c.navigate(c.url); }); })
   );
 });
-
-/* Fetch that can never return an empty 304 body: for same-origin files we
-   re-request by URL with revalidation, so the response is always a full 200. */
-function freshFetch(req) {
-  if (req.url.indexOf(self.location.origin) === 0) {
-    return fetch(req.url, { cache: "no-cache", credentials: "same-origin" });
-  }
-  return fetch(req);
-}
-
-/* Pages (navigations): network-first so updates always arrive when online;
-   fall back to cache when offline. Static assets: cache-first. */
-self.addEventListener("fetch", (e) => {
-  if (e.request.method !== "GET") return;
-  if (e.request.mode === "navigate") {
-    e.respondWith(
-      freshFetch(e.request).then((resp) => {
-        if (resp && resp.ok) {
-          const clone = resp.clone();
-          caches.open(CACHE).then((c) => c.put("./", clone));
-          return resp;
-        }
-        return caches.match("./").then((r) => r || resp);
-      }).catch(() => caches.match("./"))
-    );
-    return;
-  }
-  e.respondWith(
-    caches.match(e.request).then((cached) => {
-      if (cached) return cached;
-      return freshFetch(e.request).then((resp) => {
-        if (resp && (resp.ok || resp.type === "opaque")) {
-          const clone = resp.clone();
-          caches.open(CACHE).then((c) => c.put(e.request, clone));
-          return resp;
-        }
-        return resp;
-      }).catch(() => cached);
-    })
-  );
-});
+/* No fetch handler: this worker never touches the network again. */
