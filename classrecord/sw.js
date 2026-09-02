@@ -1,10 +1,10 @@
 /* Lumina ClassRecord — service worker (offline support) */
-const CACHE = "classrecord-v4";
+const CACHE = "classrecord-v5";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css",
-  "./app.js",
+  "./styles.css?v=5",
+  "./app.js?v=5",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png"
