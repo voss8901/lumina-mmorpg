@@ -11,8 +11,38 @@
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<link rel="stylesheet" href="styles.css?v=6" />
-<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="styles.css?v=7" />
+<script>
+/* Error catcher: never show a silent white screen. */
+(function () {
+  function show(msg) {
+    try {
+      var d = document.getElementById("fatal-error");
+      if (!d) {
+        d = document.createElement("div");
+        d.id = "fatal-error";
+        d.style.cssText = "position:fixed;left:10px;right:10px;top:10px;z-index:99999;background:#fff3f3;border:2px solid #d64550;border-radius:12px;padding:14px;font-family:sans-serif;color:#8c1d26;font-size:14px;box-shadow:0 8px 30px rgba(0,0,0,.25)";
+        d.innerHTML = '<b>Something went wrong loading the app 😔</b><div id="fatal-error-msg" style="margin:8px 0;font-size:12px;word-break:break-word"></div>' +
+          '<button id="fatal-fix" style="background:#d64550;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:14px;font-weight:bold">Clear cache &amp; reload</button>';
+        (document.body || document.documentElement).appendChild(d);
+        document.getElementById("fatal-fix").onclick = function () {
+          var done = function () { location.reload(); };
+          try {
+            var p = [];
+            if (window.caches && caches.keys) p.push(caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); }));
+            if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) p.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); }));
+            Promise.all(p).then(done, done);
+          } catch (e) { done(); }
+        };
+      }
+      document.getElementById("fatal-error-msg").textContent = msg;
+    } catch (e) { /* last resort: nothing */ }
+  }
+  window.addEventListener("error", function (ev) {
+    show((ev.message || "Unknown error") + (ev.filename ? " — " + ev.filename.split("/").pop() + ":" + ev.lineno : ""));
+  });
+})();
+</script>
 </head>
 <body>
   <!-- Mobile top bar -->
@@ -65,6 +95,7 @@
 
   <div id="toast" class="toast" hidden></div>
 
-  <script src="app.js?v=6"></script>
+  <script defer src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+  <script defer src="app.js?v=7"></script>
 </body>
 </html>

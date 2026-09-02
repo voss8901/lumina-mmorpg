@@ -29,7 +29,7 @@ function load() {
 }
 
 /* ---------- Sample class lists ---------- */
-const SEED_VERSION = 3;
+const SEED_VERSION = 4;
 
 const SAMPLE_SECTIONS = [
   {
@@ -95,6 +95,55 @@ const SAMPLE_SECTIONS = [
       "GIMO, SOFIA", "JIMLANI, PRIA KISHA", "LADJA, SITI PELMAH",
       "PACO, VIATRICE KATE", "PALCONIT, ELYSA MAE", "SANDALO, ZENOBIA",
       "TALIMA, CHESKA CHARSHIEL", "VERZOSA, SHANTAL", "VILLANUEVA, ALETHIA KARREN JOY"
+    ]
+  },
+  {
+    name: "Grade 5 – Patience",
+    males: [
+      "ALABA, ZEEKIE G.", "ALMEREZ, MARK ANGELO R.", "CERVANTES, JERICK JR M.",
+      "DELA TORRE, CLARK DAVE S.", "FERNANDEZ, KYRIE JAMES T.", "GASULLA, LLOYD C.",
+      "INTROSO, BENEDICT T.", "JIMENEZ, JOHN MELVIN M.", "LOREÑO, JHON MICHAEL G.",
+      "MALACORA, JOHN MICHAEL V.", "MEJALA, ERVIN JHON L.", "PARADERO, EDZ RAFAEL T.",
+      "PETERE, NELSON JR S.", "PRESENTE, EJ Q.", "RAZONABLE, VIEN MARU C.",
+      "RIZALDO, XYRUS", "SELLORIA, BRENT S.", "TAGABUNLANG, SANDER J.",
+      "TIOZON, JONMAR C.", "VALMORIA, VINCE CEDRICK P.", "VILLAMOR, CARL ARIAN M."
+    ],
+    females: [
+      "ABDUL, SHIEKA T.", "AGUIADAN, ASHLEY M.", "ALPASIN, BLESSIE DIMPLE M.",
+      "BAQUIRAN, AGNES JANE G.", "CANDOLE, ANGEL MAE C.", "COMENDADOR, ERICKA D.",
+      "DAPITO, IVANNA PAULHYN T.", "DIGAMON, CATHERINE", "FERNAN, ELIJAH FAITH G.",
+      "FLORES, KEILLA G.", "GUIPIGA, DANICA", "HILOTIN, MAEKYLA",
+      "JENOSAS, YONA JEAN V.", "LOREN, RHIASHA ALTHEA B.", "MADAYAN, AFNAN J.",
+      "MANIBA, PRINCESS KESHA S.", "OLANDRIA, JELLIAN S.", "RASONABLE, LOVELY P.",
+      "SEMEROS, CASSANDRA SUMMER C.", "VIA, ELISHA ANGEL M."
+    ]
+  },
+  {
+    name: "Grade 5 – Kindness",
+    males: [
+      "ABARQUEZ, JOHN PAUL, ENTAN", "AGUSTIN, STEPH KYRIE, DELA CRUZ",
+      "ANDAG, RHYKER VAUGHN, RANA", "BANTE, RAINJEL MARK, CALIBAY",
+      "CASTRO, FRANCIS JAY", "COSTE, ZAIDEN CLARK, CEBALLOS",
+      "CURAY, AXEL, ARASID", "FLORO, KENTH XUAN, LOCENTES",
+      "FUENTES, PRINCE IVAN, PATRON", "GARAY, JUAN NICHOLO, GUNO",
+      "GOMEZ, ROBERT", "HERNANDO, JEXIAN KHEN, OMBOY",
+      "LAMPARAS, RIO CYRO", "LEMOSNERO, KENNETH C.",
+      "LLANTO, VINCE EDWARD, MEDIDAS", "ORILLA, PETER WILLIAM, DULIN",
+      "RIM, KAIZER, PAJARILLAGA", "TANJENTE, ALEMAR, OFTANA",
+      "TAWYOAN, JOSEPH JR, BRETAÑA", "TULISANA, VON GABRIEL",
+      "VIDAL, ZHIAN GABRIELLE, BALUYOT", "VILLARIMO, ROBIE XHAN, CANONIGO",
+      "VILLEGAS, MARK CRISTAN"
+    ],
+    females: [
+      "ABARQUEZ, AMARA", "ABUBACAR, NOOR RAYHAN, HIYA",
+      "BALANSAG, ELIZA ANGEL, CABALLERO", "COHAY, KIANNAH CLAIRE, OÑEZ",
+      "ESTARDO, SAMANTHA, COSTELO", "GENTUGAO, ETHANIA FAYE",
+      "GRACIA, LHIRA MAE", "JIMLANI, DEEMA C.",
+      "JIMLANI, SARBI, SAYLAMA", "MASAYAO, ALEXA KAYE",
+      "MAYOL, MARIA ZAFRINA, MAGLANTAY", "NOVICIO, NATHALIA ODITHE, MAGHINAY",
+      "PITOGO, PHIEA, SACAL", "REBAJA, MARY LANN, OGABAR",
+      "REMEGIO, SOFIA LYCA, ANUTA", "REVILLA, AXLE",
+      "SOLO, SHAIFA, ALAMARA", "TABIGUE, JANESSA, ARCAYNA"
     ]
   }
 ];
@@ -222,7 +271,7 @@ function renameSectionModal() {
     m.querySelector("#mDel").onclick = () => {
       if (!confirm(`Delete section "${sec.name}" and ALL its pupils & scores? This cannot be undone.`)) return;
       state.sections = state.sections.filter(s => s.id !== sec.id);
-      state.activeSectionId = state.sections[0]?.id || null;
+      state.activeSectionId = state.sections.length ? state.sections[0].id : null;
       save(); closeModal(); render();
       toast("Section deleted.");
     };
@@ -421,6 +470,10 @@ function safeSheetName(name) {
 }
 
 function exportXLSX(all) {
+  if (typeof XLSX === "undefined") {
+    toast("Excel engine hasn't loaded yet — check internet and try again (or use CSV).");
+    return;
+  }
   const wb = XLSX.utils.book_new();
   const sections = all ? state.sections : [activeSection()].filter(Boolean);
   if (!sections.length || sections.every(s => !s.pupils.length)) { toast("Nothing to export yet."); return; }
