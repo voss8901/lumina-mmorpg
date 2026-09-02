@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Lumina ClassRecord — Teacher's Score Sheet</title>
+<meta name="theme-color" content="#232a41" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<link rel="icon" type="image/png" href="icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="stylesheet" href="styles.css" />
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <!-- Mobile top bar -->
+  <header class="topbar">
+    <button class="topbar-burger" id="btnDrawer" aria-label="Menu">☰</button>
+    <div class="topbar-title" id="topbarTitle">Lumina ClassRecord</div>
+    <div class="topbar-icon">📘</div>
+  </header>
+  <div class="drawer-overlay" id="drawerOverlay" hidden></div>
+
+  <div id="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">📘</div>
+        <div>
+          <h1>Lumina ClassRecord</h1>
+          <p>Teacher's score sheet</p>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">
+          <span>Sections</span>
+          <button class="btn-icon" id="btnAddSection" title="Add section">＋</button>
+        </div>
+        <ul id="sectionList" class="section-list"></ul>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="btn btn-ghost btn-sm" id="btnExportAll">⬇ Export all sections (.xlsx)</button>
+        <button class="btn btn-ghost btn-sm" id="btnBackup">💾 Backup data (.json)</button>
+        <button class="btn btn-ghost btn-sm" id="btnRestore">📂 Restore backup</button>
+        <input type="file" id="fileRestore" accept=".json" hidden />
+        <p class="hint">Data is saved automatically in this browser.</p>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main" id="main"></main>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modalOverlay" hidden>
+    <div class="modal" id="modal"></div>
+  </div>
+
+  <!-- Full-screen quick score entry (phone-friendly) -->
+  <div id="quickEntry" class="quick-entry" hidden></div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
